@@ -1,0 +1,11 @@
+#!/bin/bash
+     
+mnt=mount
+root_disk=RoboCartOS.img
+mnt_devices="proc dev/pts dev sys"
+     
+for i in $mnt_devices; do
+sudo umount "$mnt"/$i
+done
+sudo umount "$mnt"
+sudo rmdir "$mnt"

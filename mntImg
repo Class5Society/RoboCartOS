@@ -1,0 +1,14 @@
+#!/bin/bash
+     
+mnt=mount
+root_disk=RoboCartOS.img
+mnt_devices="proc dev dev/pts sys"
+   
+sudo mkdir "$mnt"
+sudo mount -o loop,offset=68157440 $root_disk "$mnt"
+     
+for i in $mnt_devices ; do
+sudo mount -o bind /$i "$mnt"/$i
+done
+     
+sudo chroot "$mnt" /bin/bash
