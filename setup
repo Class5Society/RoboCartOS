@@ -115,6 +115,15 @@ echo in > ${BASE_DIR}/int_p2b/direction
 #configure UART1 serial port to talk to the PIC
 stty -F /dev/ttyO1 -parenb -parodd cs8 -hupcl -cstopb cread clocal crtscts -ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr -icrnl -ixon -ixoff -iuclc -ixany -imaxbel -iutf8 -opost -olcuc -ocrnl -onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0 -isig -icanon -iexten -echo -echoe -echok -echonl -noflsh -xcase -tostop -echoprt -echoctl -echoke
 
+#configure UART2 for serial use
+echo 21 > /sys/kernel/debug/omap_mux/spi0_sclk
+echo 1 > /sys/kernel/debug/omap_mux/spi0_d0
+
+#set the edge and direction to read/write
+chmod 666 ${BASE_DIR}/digio_10/edge
+chmod 666 ${BASE_DIR}/digio_10/direction
+chmod 666 ${BASE_DIR}/digio_11/edge
+chmod 666 ${BASE_DIR}/digio_11/direction
 
 #Step 3: launch the talos file system
 
