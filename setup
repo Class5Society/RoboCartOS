@@ -1,0 +1,122 @@
+#!/bin/bash
+
+#Set up the Talos software on the beagle.
+#Must be run as root, and should run on startup.
+
+#All of the GPIO numbers, signal names, etc. are documented
+#in the pin_assigments.ods spreadsheet, and can be derived
+#from the beaglebone SRM and talos schematics.
+
+#Step 1: create links from the beagle's GPIO pin directories to
+#directories that are named in a useful way.
+
+BASE_DIR=/dev/talos_direct #for direct interface symlinks
+FS_DIR=/dev/talos          #for the user-level interface
+
+mkdir ${BASE_DIR}
+
+#buttons
+ln -s /sys/class/gpio/gpio4/ ${BASE_DIR}/button1
+ln -s /sys/class/gpio/gpio5/ ${BASE_DIR}/button2
+
+#servo enable
+ln -s /sys/class/gpio/gpio48/ ${BASE_DIR}/servo_enable
+
+#pic-beagle interrupt pins
+ln -s /sys/class/gpio/gpio51/ ${BASE_DIR}/int_b2p
+ln -s /sys/class/gpio/gpio113/ ${BASE_DIR}/int_p2b
+
+#sensor digIOs
+ln -s /sys/class/gpio/gpio2/ ${BASE_DIR}/digio_40
+ln -s /sys/class/gpio/gpio3/ ${BASE_DIR}/digio_41
+ln -s /sys/class/gpio/gpio30/ ${BASE_DIR}/digio_50
+ln -s /sys/class/gpio/gpio31/ ${BASE_DIR}/digio_51
+ln -s /sys/class/gpio/gpio79/ ${BASE_DIR}/digio_60
+ln -s /sys/class/gpio/gpio78/ ${BASE_DIR}/digio_61
+ln -s /sys/class/gpio/gpio49/ ${BASE_DIR}/digio_10
+ln -s /sys/class/gpio/gpio117/ ${BASE_DIR}/digio_11
+ln -s /sys/class/gpio/gpio115/ ${BASE_DIR}/digio_20
+ln -s /sys/class/gpio/gpio111/ ${BASE_DIR}/digio_21
+ln -s /sys/class/gpio/gpio60/ ${BASE_DIR}/digio_30
+ln -s /sys/class/gpio/gpio50/ ${BASE_DIR}/digio_31
+
+#Step 2: setup the beagle's IO pins.
+#See the beagle documentation for an explanation of what
+#these commands are.
+
+#put all the GPIO pins into GPIO mode
+
+#buttons--these are pulled up
+echo 37 > /sys/kernel/debug/omap_mux/spi0_d1
+echo 37 > /sys/kernel/debug/omap_mux/spi0_cs0
+
+#servo enable--pulled down
+echo 27 > /sys/kernel/debug/omap_mux/gpmc_a0
+
+#pic-beagle interrupt pins--these are pulled down
+echo 27 > /sys/kernel/debug/omap_mux/mcasp0_ahclkr
+echo 27 > /sys/kernel/debug/omap_mux/gpmc_a3
+
+#sensor digIOs--these are not pulled up or down
+echo 2f > /sys/kernel/debug/omap_mux/spi0_sclk
+echo 2f > /sys/kernel/debug/omap_mux/spi0_d0
+echo 2f > /sys/kernel/debug/omap_mux/gpmc_wait0
+echo 2f > /sys/kernel/debug/omap_mux/gpmc_wpn
+echo 2f > /sys/kernel/debug/omap_mux/lcd_data9
+echo 2f > /sys/kernel/debug/omap_mux/lcd_data8
+echo 2f > /sys/kernel/debug/omap_mux/gpmc_a1
+echo 2f > /sys/kernel/debug/omap_mux/mcasp0_ahclkx
+echo 2f > /sys/kernel/debug/omap_mux/mcasp0_fsr
+echo 2f > /sys/kernel/debug/omap_mux/mcasp0_fsx
+echo 2f > /sys/kernel/debug/omap_mux/gpmc_ben1
+echo 2f > /sys/kernel/debug/omap_mux/gpmc_a2
+
+#set up UART1 to talk to the PIC
+echo 20 > /sys/kernel/debug/omap_mux/uart1_rxd
+echo 0 > /sys/kernel/debug/omap_mux/uart1_txd
+
+#export all the GPIO pins we're going to use, so the
+#device files appear in the file system.
+
+#buttons
+echo 4 > /sys/class/gpio/export
+echo 5 > /sys/class/gpio/export
+
+#servo enable
+echo 48 > /sys/class/gpio/export
+
+#pic-beagle interrupt pins
+echo 51 > /sys/class/gpio/export
+echo 113 > /sys/class/gpio/export
+
+#sensor digIOs
+echo 2 > /sys/class/gpio/export
+echo 3 > /sys/class/gpio/export
+echo 30 > /sys/class/gpio/export
+echo 31 > /sys/class/gpio/export
+echo 79 > /sys/class/gpio/export
+echo 78 > /sys/class/gpio/export
+echo 49 > /sys/class/gpio/export
+echo 117 > /sys/class/gpio/export
+echo 115 > /sys/class/gpio/export
+echo 111 > /sys/class/gpio/export
+echo 60 > /sys/class/gpio/export
+echo 50 > /sys/class/gpio/export
+
+#disable servos by default (they will enable when somebody uses one)
+echo low > ${BASE_DIR}/servo_enable/direction
+
+#make sure we're not sending interrupts to the PIC
+echo low > ${BASE_DIR}/int_b2p/direction
+
+#set the PIC-to-beagle interrupt pin to input mode
+echo in > ${BASE_DIR}/int_p2b/direction
+
+#configure UART1 serial port to talk to the PIC
+stty -F /dev/ttyO1 -parenb -parodd cs8 -hupcl -cstopb cread clocal crtscts -ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr -icrnl -ixon -ixoff -iuclc -ixany -imaxbel -iutf8 -opost -olcuc -ocrnl -onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0 -isig -icanon -iexten -echo -echoe -echok -echonl -noflsh -xcase -tostop -echoprt -echoctl -echoke
+
+
+#Step 3: launch the talos file system
+
+mkdir ${FS_DIR}
+./talos_fs ${FS_DIR} -oallow_other -odefault_permissions
